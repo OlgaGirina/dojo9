@@ -94,10 +94,11 @@ test("get products by id - should be successful", async ({ request }) => {
 
 test("get product related by slug", async ({ request }) => {
   const slugRelated = await request.get(
-    "api/v1/products/slug/handmade-fresh-table/related",
+    "api/v1/products/slug/new-product/related",
   );
   const json = await slugRelated.json();
-  expect(
-    json.every((item) => item.category.slug === "handmade-fresh-table"),
-  ).toBeTruthy();
+  console.log(json);
+  expect(json.every((item: any) => item.category.slug === "clothes")).toBe(
+    true,
+  );
 });
