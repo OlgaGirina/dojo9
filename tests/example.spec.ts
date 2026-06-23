@@ -23,7 +23,6 @@ test("create products - should be successful", async ({ request }) => {
     failOnStatusCode: true,
   });
   const json = await response.json();
-  //console.log(json);
 
   expect(json.title === "New Product" + randomNum()).toBeTruthy;
 });
@@ -37,20 +36,29 @@ test("update products - should be successful", async ({ request }) => {
       categoryId: 1,
       images: ["https://placehold.co/600x400"],
     },
+    failOnStatusCode: true,
   });
   const jsonCreate = await response.json();
   const productId = jsonCreate.id;
-
-  await request.put(`/api/v1/products/${productId}`, {
-    data: {
-      title: "New Updated Product",
-      price: 10,
-      description: "Updated description ",
-      categoryId: 1,
-      images: ["https://placehold.co/600x400"],
+  const updatedTitle = "Updated title" + Math.floor(Math.random() * 1_000_000);
+  const updatedProductResponce = await request.put(
+    `/api/v1/products/${productId}`,
+    {
+      data: {
+        title: updatedTitle,
+        price: 10,
+        description: "Updated description ",
+        categoryId: 1,
+        images: ["https://placehold.co/600x400"],
+      },
     },
-  });
+  );
+
+  const jsonUpdatedProduct = await updatedProductResponce.json();
+  //  console.log(jsonUpdatedProduct);
+  expect(jsonUpdatedProduct.title === updatedTitle).toBeTruthy();
 });
+
 test("delete products - should be successful", async ({ request }) => {
   const response = await request.post("/api/v1/products/", {
     data: {
