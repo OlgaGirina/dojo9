@@ -23,8 +23,8 @@ test("create products - should be successful", async ({ request }) => {
     failOnStatusCode: true,
   });
   const json = await response.json();
-
   expect(json.title === "New Product" + randomNum()).toBeTruthy;
+  expect(json).toMatchObject;
 });
 
 test("update products - should be successful", async ({ request }) => {
