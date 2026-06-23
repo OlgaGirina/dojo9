@@ -41,6 +41,7 @@ test("update products - should be successful", async ({ request }) => {
   const jsonCreate = await response.json();
   const productId = jsonCreate.id;
   const updatedTitle = "Updated title" + Math.floor(Math.random() * 1_000_000);
+
   const updatedProductResponce = await request.put(
     `/api/v1/products/${productId}`,
     {
@@ -55,7 +56,6 @@ test("update products - should be successful", async ({ request }) => {
   );
 
   const jsonUpdatedProduct = await updatedProductResponce.json();
-  //  console.log(jsonUpdatedProduct);
   expect(jsonUpdatedProduct.title === updatedTitle).toBeTruthy();
 });
 
@@ -103,7 +103,9 @@ test("get products by id - should be successful", async ({ request }) => {
   });
   const json = await response.json();
   const id = json.id;
+
   const idRelated = await request.get(`/api/v1/products/${id}/related`);
+
   expect(idRelated.status()).toBe(200);
 });
 
@@ -118,9 +120,9 @@ test("get product related by slug", async ({ request }) => {
     },
     failOnStatusCode: true,
   });
-
   const jsonCreatedProduct = await response.json();
   const createdProductSlug = jsonCreatedProduct.slug;
+
   const slugRelated = await request.get(
     `api/v1/products/slug/${createdProductSlug}/related`,
   );
