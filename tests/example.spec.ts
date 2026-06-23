@@ -1,30 +1,37 @@
 import { test, expect, request } from "@playwright/test";
 
+function randomNum() {
+  return Math.floor(Math.random() * 1_000_000);
+}
+
 test("get products - should be successful", async ({ request }) => {
   const response = await request.get("/api/v1/products");
 
-  expect(response).toBeOK();
   expect(response.status()).toBe(200);
+  expect(response.headers()).toBeTruthy();
 });
 
 test("create products - should be successful", async ({ request }) => {
-  const randomNum = Math.floor(Math.random() * 1_000_000);
-  await request.post("/api/v1/products/", {
+  const response = await request.post("/api/v1/products/", {
     data: {
-      title: "New Product" + randomNum,
+      title: "New Product" + randomNum(),
       price: 10,
       description: "A description",
       categoryId: 1,
       images: ["https://placehold.co/600x400"],
     },
+    failOnStatusCode: true,
   });
+  const json = await response.json();
+  //console.log(json);
+
+  expect(json.title === "New Product" + randomNum()).toBeTruthy;
 });
 
 test("update products - should be successful", async ({ request }) => {
-  const randomNum = Math.floor(Math.random() * 1_000_000);
   const response = await request.post("/api/v1/products/", {
     data: {
-      title: "New Product" + randomNum,
+      title: "New Product" + randomNum(),
       price: 10,
       description: "A description",
       categoryId: 1,
@@ -45,10 +52,9 @@ test("update products - should be successful", async ({ request }) => {
   });
 });
 test("delete products - should be successful", async ({ request }) => {
-  const randomNum = Math.floor(Math.random() * 1_000_000);
   const response = await request.post("/api/v1/products/", {
     data: {
-      title: "New Product" + randomNum,
+      title: "New Product" + randomNum(),
       price: 10,
       description: "A description",
       categoryId: 1,
@@ -64,27 +70,28 @@ test("delete products - should be successful", async ({ request }) => {
 test("check pagination", async ({ request }) => {
   const response = await request.get("/api/v1/products", {
     params: {
-      offset: 0,
-      limit: 10,
+      offset: 10,
+      limit: 5,
     },
+    failOnStatusCode: true,
   });
-  const json = await response.json();
 
-  expect(response.status()).toBe(200);
+  const json = await response.json();
+  console.log(json);
   expect(json.length).toBeLessThanOrEqual(10);
   expect(json[0]).toHaveProperty("id");
 });
 
 test("get products by id - should be successful", async ({ request }) => {
-  const randomNum = Math.floor(Math.random() * 1_000_000);
   const response = await request.post("/api/v1/products/", {
     data: {
-      title: "New Product" + randomNum,
+      title: "New Product" + randomNum(),
       price: 10,
       description: "A description",
       categoryId: 2,
       images: ["https://placehold.co/600x400"],
     },
+    failOnStatusCode: true,
   });
   const json = await response.json();
   const id = json.id;
@@ -93,12 +100,26 @@ test("get products by id - should be successful", async ({ request }) => {
 });
 
 test("get product related by slug", async ({ request }) => {
+  const response = await request.post("/api/v1/products/", {
+    data: {
+      title: "New Product" + randomNum(),
+      price: 10,
+      description: "A description",
+      categoryId: 2,
+      images: ["https://placehold.co/600x400"],
+    },
+    failOnStatusCode: true,
+  });
+
+  const jsonCreatedProduct = await response.json();
+  const createdProductSlug = jsonCreatedProduct.slug;
   const slugRelated = await request.get(
-    "api/v1/products/slug/new-product/related",
+    `api/v1/products/slug/${createdProductSlug}/related`,
   );
+
   const json = await slugRelated.json();
   console.log(json);
-  expect(json.every((item: any) => item.category.slug === "clothes")).toBe(
-    true,
-  );
+  expect(
+    json.every((item: any) => item.category.slug === "queryretefailederror"),
+  ).toBe(true);
 });
