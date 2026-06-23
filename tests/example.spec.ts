@@ -129,7 +129,5 @@ test("get product related by slug", async ({ request }) => {
 
   const json = await slugRelated.json();
   console.log(json);
-  expect(
-    json.every((item: any) => item.category.slug === "queryretefailederror"),
-  ).toBe(true);
+  expect(json.every((item: any) => item.category.slug === "stoppp")).toBe(true);
 });
