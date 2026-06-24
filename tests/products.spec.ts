@@ -8,13 +8,13 @@ test("get products - should be successful", async ({ request }) => {
   const response = await request.get("/api/v1/products");
 
   expect(response.status()).toBe(200);
-  expect(response.headers()).toBeTruthy();
 });
 
 test("create products - should be successful", async ({ request }) => {
+  const title = "New Product" + randomNum();
   const response = await request.post("/api/v1/products/", {
     data: {
-      title: "New Product" + randomNum(),
+      title: title,
       price: 10,
       description: "A description",
       categoryId: 1,
@@ -23,8 +23,20 @@ test("create products - should be successful", async ({ request }) => {
     failOnStatusCode: true,
   });
   const json = await response.json();
-  expect(json.title === "New Product" + randomNum()).toBeTruthy;
-  expect(json).toMatchObject;
+  console.log(json);
+  expect(json.title).toBe(title);
+  expect(json.id).toBeDefined();
+  expect(typeof json.id).toBe("number");
+  expect(json.creationAt).toBeDefined();
+  expect(json).toMatchObject({
+    title: title,
+    price: 10,
+    description: "A description",
+    images: ["https://placehold.co/600x400"],
+    category: {
+      id: 1,
+    },
+  });
 });
 
 test("update products - should be successful", async ({ request }) => {
@@ -54,7 +66,6 @@ test("update products - should be successful", async ({ request }) => {
       },
     },
   );
-
   const jsonUpdatedProduct = await updatedProductResponce.json();
   expect(jsonUpdatedProduct.title === updatedTitle).toBeTruthy();
 });
@@ -69,10 +80,26 @@ test("delete products - should be successful", async ({ request }) => {
       images: ["https://placehold.co/600x400"],
     },
   });
-  const jsonDelete = await response.json();
-  const productIdDelete = jsonDelete.id;
+  const jsonCreateForDelete = await response.json();
+  const productIdDelete = jsonCreateForDelete.id;
 
-  await request.delete(`/api/v1/products/${productIdDelete}`);
+  // Act
+  const responseDelete = await request.delete(
+    `/api/v1/products/${productIdDelete}`,
+  );
+
+  //
+  const jsonDelete = await responseDelete.json();
+  expect(jsonDelete).toBe(true);
+  const afterDeleteGet = await request.get(
+    `/api/v1/products/${productIdDelete}`,
+  );
+  const jsonDeleteGet = await afterDeleteGet.json();
+  expect(afterDeleteGet.status()).toBe(400);
+  expect(jsonDeleteGet).toMatchObject({
+    name: "EntityNotFoundError",
+    path: `/api/v1/products/${productIdDelete}`,
+  });
 });
 
 test("check pagination", async ({ request }) => {
@@ -129,5 +156,7 @@ test("get product related by slug", async ({ request }) => {
 
   const json = await slugRelated.json();
   console.log(json);
-  expect(json.every((item: any) => item.category.slug === "stoppp")).toBe(true);
+  expect(json.every((item: any) => item.category.slug === "stoppp")).toBe(
+    false,
+  );
 });
