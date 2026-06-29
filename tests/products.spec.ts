@@ -1,4 +1,4 @@
-import { test, expect, request } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 function randomNum() {
   return Math.floor(Math.random() * 1_000_000);
@@ -6,7 +6,7 @@ function randomNum() {
 
 test.describe(
   "Products API - with created product",
-  { tag: ["@getProduct"] },
+  { tag: ["@productCreation"] },
   () => {
     let createdProductSlug: string;
     let createdProductId: number;
@@ -46,16 +46,28 @@ test.describe(
       });
     });
 
-    test(
-      "get products - should be successful",
-      { tag: ["@get product"] },
-      async ({ request }) => {
-        //Act
+    test("get products - should be successful", async ({ request }) => {
+      const result = await test.step("Get products", async () => {
         const response = await request.get("/api/v1/products");
-        // Assert
-        expect(response.status()).toBe(200);
-      },
-    );
+        const json = await response.json();
+
+        return {
+          response,
+          json,
+        };
+      });
+
+      await test.step("Analyse response", async () => {
+        expect(result.response.status()).toBe(200);
+
+        expect(result.response.headers()["content-type"]).toContain("json");
+      });
+
+      await test.step("Analyse products list", async () => {
+        expect(Array.isArray(result.json)).toBe(true);
+        expect(result.json.length).toBeGreaterThan(0);
+      });
+    });
     test("get products by id - should be successful", async ({ request }) => {
       // Act
       const idRelated = await request.get(
@@ -154,39 +166,46 @@ test.describe(
     });
   },
 );
-test.describe("Products API ", { tag: ["@createAndDelete"] }, () => {
+test.describe("Products API ", { tag: ["@createAndDelete"] }, async () => {
   test(
     "create products - should be successful",
     { tag: "@create" },
     async ({ request }) => {
-      //Arrange
-      const title = "New Product" + randomNum();
-      //Act
-      const response = await request.post("/api/v1/products/", {
-        data: {
-          title: title,
+      const createProductPost = await test.step("Create product", async () => {
+        const title = "New Product" + randomNum();
+        const response = await request.post("/api/v1/products/", {
+          data: {
+            title: title,
+            price: 10,
+            description: "A description",
+            categoryId: 1,
+            images: ["https://placehold.co/600x400"],
+          },
+          failOnStatusCode: true,
+        });
+        //Assert
+        const json = await response.json();
+
+        return {
+          response,
+          json,
+          title,
+        };
+      });
+      await test.step("Check json", () => {
+        expect(createProductPost.json.title).toBe(createProductPost.title);
+        expect(createProductPost.json.id).toBeDefined();
+        expect(typeof createProductPost.json.id).toBe("number");
+        expect(createProductPost.json.creationAt).toBeDefined();
+        expect(createProductPost.json).toMatchObject({
+          title: createProductPost.title,
           price: 10,
           description: "A description",
-          categoryId: 1,
           images: ["https://placehold.co/600x400"],
-        },
-        failOnStatusCode: true,
-      });
-      //Assert
-      const json = await response.json();
-      console.log(json);
-      expect(json.title).toBe(title);
-      expect(json.id).toBeDefined();
-      expect(typeof json.id).toBe("number");
-      expect(json.creationAt).toBeDefined();
-      expect(json).toMatchObject({
-        title: title,
-        price: 10,
-        description: "A description",
-        images: ["https://placehold.co/600x400"],
-        category: {
-          id: 1,
-        },
+          category: {
+            id: 1,
+          },
+        });
       });
     },
   );
@@ -195,7 +214,51 @@ test.describe("Products API ", { tag: ["@createAndDelete"] }, () => {
     "delete products - should be successful",
     { tag: "@delete" },
     async ({ request }) => {
-      // Arrange
+      const productCreation =
+        await test.step("Create product to be deleted", async () => {
+          const title = "New Product" + randomNum();
+          const response = await request.post("/api/v1/products/", {
+            data: {
+              title: title,
+              price: 10,
+              description: "A description",
+              categoryId: 1,
+              images: ["https://placehold.co/600x400"],
+            },
+          });
+          const jsonCreateForDelete = await response.json();
+          const productIdDelete = jsonCreateForDelete.id;
+          return {
+            productIdDelete,
+          };
+        });
+
+      const deleteProductRes = await test.step("Product deletion", async () => {
+        const responseDeletion = await request.delete(
+          `/api/v1/products/${productCreation.productIdDelete}`,
+        );
+        const jsonDelete = await responseDeletion.json();
+        return {
+          jsonDelete,
+        };
+      });
+
+      await test.step("Check if the product deleted", async () => {
+        expect(deleteProductRes.jsonDelete).toBe(true);
+        const afterDeleteGet = await request.get(
+          `/api/v1/products/${productCreation.productIdDelete}`,
+        );
+        const jsonDeleteGet = await afterDeleteGet.json();
+        expect(afterDeleteGet.status()).toBe(400);
+        expect(jsonDeleteGet).toMatchObject({
+          name: "EntityNotFoundError",
+          path: `/api/v1/products/${productCreation.productIdDelete}`,
+        });
+      });
+    },
+  );
+});
+/*   // Arrange
       const title = "New Product" + randomNum();
       const response = await request.post("/api/v1/products/", {
         data: {
@@ -227,5 +290,4 @@ test.describe("Products API ", { tag: ["@createAndDelete"] }, () => {
         path: `/api/v1/products/${productIdDelete}`,
       });
     },
-  );
-});
+  );*/
