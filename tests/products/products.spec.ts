@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { ProductSchema } from "../../app/product.schema.ts";
 
 function randomNum() {
   return Math.floor(Math.random() * 1_000_000);
@@ -206,6 +207,10 @@ test.describe("Products API ", { tag: ["@createAndDelete"] }, async () => {
             id: 1,
           },
         });
+      });
+      await test.step("Check json", () => {
+        const result = ProductSchema.safeParse(createProductPost.json);
+        expect(result.success).toBe(true);
       });
     },
   );
